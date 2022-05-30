@@ -8,12 +8,12 @@ from collections import Counter
 import sys, os, re, glob
 
 # Variant 1: sine curve dataset
-def generateCurve(n, _freq, err, phase):
+def generateCurve(n, _freq, err, phase, dim=100):
     trajectory = []
     params = []
     n = int(n)
     for i in range(n):
-        line = np.arange(1, 101, 1)
+        line = np.arange(1, dim+1, 1)
         freq = _freq[0]
         if len(_freq) > 1:
             freq = random.uniform(_freq[0], _freq[1])
@@ -353,7 +353,7 @@ def read_traffic(nclasses, path):
 
 
 # Create data: points
-def make_blobs(n_samples, nclasses, now_str):
+def generate_blobs(n_samples, nclasses, now_str):
     segments = []
     labs = []
     std = [random.uniform(0, 1) for x in range(nclasses)]
@@ -367,6 +367,9 @@ def make_blobs(n_samples, nclasses, now_str):
                 y1.append(y)
         segments.append(c1)
         labs.append(y1)
+    classdict = {k: v for v, k in enumerate(range(nclasses))}
+    data = [item for sublist in segments for item in sublist]
+    labels = [item for sublist in labs for item in sublist]
     # write this dataset in a file
     path = 'datasets/blobs/' + now_str[:-6]
     if not os.path.exists(path):
@@ -378,9 +381,10 @@ def make_blobs(n_samples, nclasses, now_str):
             fi.write('\n')
         fi.close()
     print('Blobs generated.')
-    return
+    
+    return (data, labels, classdict)
 
-def make_circles(n_samples, nclasses, now_str):
+def generate_circles(n_samples, nclasses, now_str):
     if nclasses > 3:
         print('More than 3 classes not supported at this time')
         sys.exit()
@@ -408,6 +412,9 @@ def make_circles(n_samples, nclasses, now_str):
                 y1.append(y)
         segments.append(c1)
         labs.append(y1)
+    data = [item for sublist in segments for item in sublist]
+    labels = [item for sublist in labs for item in sublist]
+    classdict = {k: v for v, k in enumerate(range(nclasses))}
     # write this dataset in a file
     path = 'datasets/circles/' + now_str[:-6]
     if not os.path.exists(path):
@@ -419,47 +426,56 @@ def make_circles(n_samples, nclasses, now_str):
             fi.write('\n')
         fi.close()
     print('Circles generated.')
-    return
+    return (data, labels, classdict)
 
 # Create data: sine curve
-def make_curves(n_samples, nclasses, now_str):
+def generate_curves(n_samples, nclasses, dim, now_str):
     samplingrate = 1
     segments = []
-    freqs = [(0.1, 0.12), (0.2, 0.22), (0.42, 0.44), (0.6, 0.66)]
-    errs = [0.2, 0.4, 0.7, 0.1]
-    phases = [5, 12, -10, -20]
-    # freqs, errs, phases = set(), set(), set()
+    labs = []
+    #freqs = [(0.1, 0.12), (0.2, 0.22), (0.42, 0.44), (0.6, 0.66)]
+    #errs = [0.2, 0.4, 0.7, 0.1]
+    #phases = [5, 12, -10, -20]
+    freqs, errs, phases = set(), set(), set()
     params = {}
     meta = []
 
     for i in range(nclasses):
         freq, err, phase = None, None, None
-        '''while True:  
+        print('Trying parameters for class', i)
+        print('\nFrequency:')
+        while True:  
             f = random.uniform(0, 1)          
             freq = (f, f+0.02)
-            print('try freq', freq)
+            print('*', end=' ', flush=True)
             if not _in_(freq, freqs):
                 freqs.add(freq)
                 break
+        print('\nError:')
         while True:
             err = random.uniform(0, 1)
-            print('try err', err)
+            print('*', end=' ', flush=True)
             if not _in_(err, errs):
                 errs.add(err)
                 break
+        print('\nPhase:')
         while True:
             phase = int(random.uniform(-15, 15))
-            print('try', phase)
+            print('*', end=' ', flush=True)
             if not _in_(phase, phases):
                 phases.add(phase)
                 break     
-        print('Params, ', freq, err, phase)'''
-        freq = freqs[i]
-        err = errs[i]
-        phase = phases[i]
-        c1, p = generateCurve(n_samples / nclasses, freq, err, phase)
+        print('\nSelected params, ', freq, err, phase)
+        #freq = freqs[i]
+        #err = errs[i]
+        #phase = phases[i]
+        c1, p = generateCurve(n_samples / nclasses, freq, err, phase, dim)
         segments.append(c1)
+        labs.append([i]*len(c1))
         params[i] = p
+    data = [item for sublist in segments for item in sublist]
+    labels = [item for sublist in labs for item in sublist]
+    classdict = {k: v for v, k in enumerate(range(nclasses))}
     # write this dataset in a file
     path = 'datasets/sine-curve/' + now_str[:-6]
     if not os.path.exists(path):
@@ -481,7 +497,7 @@ def make_curves(n_samples, nclasses, now_str):
             fi.write('\n')
         fi.close()
     print('Curves generated')
-    return
+    return (data, labels, classdict)
 
 
 # Helper functions
