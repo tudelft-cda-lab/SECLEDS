@@ -199,10 +199,17 @@ def read_points(n_samples, nclasses, saved_path):
 
     X = [x for (x, y) in trajectory]  # Data
     ann = [x for x, y in enumerate(X)]  # IDs
-    labs = [item for sublist in labs for item in sublist]  # classes
+    labs = [y for (x, y) in trajectory]  # classes
     meta = [str(i) + '|' + str(l) for i, l in zip(ann, labs)]
     dist = X  # get_distmatrix(X, 'stat')
 
+
+
+
+        
+    
+    
+    
     return (X, ann, labs, dist, classdict, meta)
 
 # Read univariate (sine curve)
