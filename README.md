@@ -1,4 +1,4 @@
-# SECLEDS
+# SECLEDS: Sequence Clustering in Evolving Data Streams via Multiple Medoids and Medoid Voting
 
 SECLEDS is a real-time sequence clustering variant of the popular k-medoids algorithm that uses multiple prototypes per cluster and a prototype voting scheme. 
 
