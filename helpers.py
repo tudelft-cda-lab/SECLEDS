@@ -70,12 +70,12 @@ def shuffle_stream(X, ann, labs, dist, X_embedded, classes, nprototypes, batchsi
 
 def add_drift(dataset, data, params, drift):
     drifted_ = []
-    if dataset == 'sine-curve':
+    if dataset == 'uni-sine':
         (newfreq, newerr, newphase) = zip(*params)
         for cid in range(len(data)):
             newcurve =  generateCurve(1, [newfreq[cid]], newerr[cid], newphase[cid]+(drift*cid))[0][0]
             drifted_.append(newcurve)   
-    elif dataset == 'blobs':
+    elif dataset == 'points':
         for did, point in enumerate(data):
             newpt = (point[0]+(drift*did), point[1]+(drift*did)) # adding drift in both direction
             #x = point[0]+(drift*did)
@@ -88,7 +88,7 @@ def add_drift(dataset, data, params, drift):
     else:
         print('Dataset not supported for drift')
         sys.exit()
-    print(len(drifted_))
+    print('Drifted %d samples'%(len(drifted_)))
     return drifted_
 
 
@@ -117,11 +117,7 @@ def plot_votes(votesOT, nclasses, now_str):
                 ax.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
                           mode="expand", borderaxespad=0, ncol=5)
                 fig.subplots_adjust(bottom=0.25, left=0.1, right=0.98)  # or whatever
-                plt.savefig(now_str + '/VotesOT-' + conf + '-' + str(trial) + '-' + str(clstrid) + '.png')
-                # plt.grid(True)
-
-            # plt.show()
-
+                plt.savefig(now_str + '/VotesOT-' + conf + '-trial' + str(trial) + '-k' + str(clstrid) + '.png')
 def plot_over_time(met_name, struct, offline_baseline, bl_names, OT_pal, TRIALS, now_str):
     plt.rcParams.update({'font.size': 16})
     fig = plt.figure(figsize=(10, 10))
@@ -333,13 +329,12 @@ def plot_seq(fig, config_name, assigned_clusters, proto_idx, X_embedded_, ann, p
     #plt.show()
 
 # Plot all together    
-def plot_all(config_name, params, dataset, metr, spread, assigned_clusters, proto_idx, X_embedded_, ann, pal, classes, pvotes, now_str):
+def plot_all(config_name, params, dataset, metr, assigned_clusters, proto_idx, X_embedded_, ann, pal, classes, pvotes, now_str):
     
     fig = plt.figure(figsize=(10,10))
-    plt.title('Final SECLEDS clustering [config= '+config_name+']\n' + '[trial='+str(params[0])+', classes='+str(params[1])+', prototypes='+str(params[2])+']\n'+\
-    '[Avg spread proto='+spread+']\n'+\
-    '[F1=%.2f, \nInit_P=%.2f, Init_C=%.2f, Purity=%.2f, Comp=%.2f, \nP_purity=%.2f, Cl_discvrd=%.2f]'%(metr))
-        
+    plt.title(config_name+' [Trial='+str(params[0])+', classes='+str(params[1])+', prototypes='+str(params[2])+']\n'+\
+    '[F1=%.2f, Purity_init=%.2f, Purity_all=%.2f, \nPurity_proto=%.2f, C_found=%.2f]'%(metr))
+
     # Plotting prototypes
     protoidx = [item for sublist in proto_idx for item in sublist]
     X_embedded =  np.array([X_embedded_[x] for x in protoidx])
@@ -360,7 +355,7 @@ def plot_all(config_name, params, dataset, metr, spread, assigned_clusters, prot
             plt.plot(X_embedded_[i][0], X_embedded_[i][1], marker= "o", color=pal[assigned_clusters[txt]], alpha=0.2)
             #plt.annotate(classes[assigned_clusters[txt]], (X_embedded_[i][0], X_embedded_[i][1]), color=pal[assigned_clusters[txt]], alpha=0.5)
             
-    plt.savefig(now_str+'/'+dataset+'-'+config_name+'-'+str(params[0])+'.png')
+    plt.savefig(now_str+'/'+config_name+'-'+dataset+'-'+str(params[0])+'.png')
     plt.close(fig)
     return
 
@@ -376,7 +371,7 @@ def plot_data(X_embedded, labs, classdict, pal, dataset, now_str, name = ""):
     plt.rcParams.update(params)
             
     fig = plt.figure(figsize=(10,10))
-    plt.title('Raw data w/ GT ['+dataset+']')
+    plt.title('Input data w/ labels ['+dataset+name+']')
     ax = plt.gca()
     for i in range(len(X_embedded)):
         tupple = X_embedded[i]
@@ -386,11 +381,11 @@ def plot_data(X_embedded, labs, classdict, pal, dataset, now_str, name = ""):
         #plt.annotate(labs[i], (tupple[0], tupple[1]), color=pal[classdict[labs[i]]], alpha=0.2)
     legend_without_duplicate_labels(ax)
     # Color = class, annotation = Sequence ID
-    plt.savefig(now_str+'/'+'raw-data-'+dataset+name+'-col.png')  
+    plt.savefig(now_str+'/'+'input-'+dataset+name+'-labeled.png')  
     plt.close()
 
     fig = plt.figure(figsize=(10,10))
-    plt.title('Raw data ['+dataset+']')
+    plt.title('Input data ['+dataset+name+']')
     
     for i in range(len(X_embedded)):
         tupple = X_embedded[i]
@@ -398,7 +393,7 @@ def plot_data(X_embedded, labs, classdict, pal, dataset, now_str, name = ""):
             tupple = [x[0] for x in tupple] # Todo: handle extra dimensions
         plt.plot(tupple[0], tupple[1], marker= "o", color='blue')
     
-    plt.savefig(now_str+'/'+'raw-data-'+dataset+name+'.png')
+    plt.savefig(now_str+'/'+'input-'+dataset+name+'.png')
     plt.close(fig)    
     return
 
@@ -441,7 +436,7 @@ def plot_heatmap(X, labs, classes, dataset, now_str, max_each_class=20, name="",
                 identifiers[counter] = sample
             counter += 1
     fig = plt.figure(figsize=(10,8))
-    plt.title('Temporal heatmap: Showing %d sequences per class [%s]'%(samplesize, dataset))
+    plt.title('Temporal heatmap [%s] \nSampling %d items per class'%(dataset, samplesize))
     df = pd.DataFrame(sampled, index=identifiers)
     ax = sns.heatmap(df, center=0.0)
     plt.setp(ax.get_yticklabels(),rotation=0)
@@ -450,15 +445,15 @@ def plot_heatmap(X, labs, classes, dataset, now_str, max_each_class=20, name="",
     borders = [samplesize*i for i in range(1, len(classes))]
     for border in borders:
         ax.add_patch(Rectangle((0, border), seqlength, 0, ec='white', fc='none', lw=1.5))
-    plt.xlabel('Time')
-    plt.ylabel('Sequences')
+    plt.xlabel('Time/Dimensions')
+    plt.ylabel('Samples')
     #plt.show()
-    plt.savefig(now_str+'/'+'raw-data-'+dataset+name+'-temporal.png')
+    plt.savefig(now_str+'/'+'input-'+dataset+name+'-temporal.png')
     plt.close(fig)    
     return    
     
 # plot medoids
-def plot_medoids(config_name, trial, prototypes, nclasses, nprototypes, dataset, now_str, meta=None):
+def plot_medoids(config_name, trial, prototypes, nclasses, nprototypes, p_purity, dataset, now_str, meta=None):
     params = {'font.size': 16 } 
              
     plt.rcParams.update(params)
@@ -487,7 +482,7 @@ def plot_medoids(config_name, trial, prototypes, nclasses, nprototypes, dataset,
     
     fig = plt.figure(figsize=(10,5))
     
-    plt.title('Final medoids [config= %s]\n[trial=%d, classes=%d, prototypes=%d]'%(config_name, trial, nclasses, nprototypes)) 
+    plt.title('Final medoids [%s][Purity_proto=%.2f]\n[trial=%d, classes=%d, prototypes=%d]'%(config_name, p_purity, trial, nclasses, nprototypes)) 
     
     df = pd.DataFrame(sampled, index=identifiers)
     ax = sns.heatmap(df, center=0.0)
@@ -496,10 +491,10 @@ def plot_medoids(config_name, trial, prototypes, nclasses, nprototypes, dataset,
     borders = [samplesize*i for i in range(1, nclasses)]
     for border in borders:
         ax.add_patch(Rectangle((0, border), seqlength, 0, ec='white', fc='none', lw=0.5))
-    plt.xlabel('Time')
+    plt.xlabel('Time/Dimensions')
     plt.ylabel('Sample ID')
     #plt.show()
-    plt.savefig(now_str+'/'+'temporal-'+dataset+'-'+config_name+'-'+str(trial)+'.png')
+    plt.savefig(now_str+'/'+'medoids-'+config_name+'-'+dataset+'-'+str(trial)+'.png')
     plt.close(fig)    
     return 
     
@@ -518,34 +513,34 @@ def plot_letters(config_name, trial, prototypes, nclasses, nprototypes, dataset,
 
     fig = plt.figure(figsize=(10,5))
     
-    plt.title('Final medoids [config= %s]\n[trial=%d, classes=%d, prototypes=%d]'%(config_name, trial, nclasses, nprototypes)) 
+    plt.title('Final medoids [%s]\n[trial=%d, classes=%d, prototypes=%d]'%(config_name, trial, nclasses, nprototypes)) 
     
     for med in sampled_:
     	plt.plot([x[0] for x in med], [x[1] for x in med])
-    plt.savefig(now_str+'/'+'medoids-'+dataset+'-'+config_name+'-'+str(trial)+'.png')
+    plt.savefig(now_str+'/'+'letters-'+config_name+'-'+dataset+'-'+str(trial)+'.png')
     plt.close(fig)    
     return        
         
 # Plotting baselines final clustering
-def plot_onlineBL(configname, X_embedded, centers, assigned_clusters, pal, trial, metrics, now_str):
+def plot_onlineBL(configname, dataset, X_embedded, centers, assigned_clusters, pal, trial, nclasses, metrics, now_str):
     fig = plt.figure(figsize=(10,10))
     for p_idx in range(len(X_embedded)):
         plt.plot(X_embedded[p_idx][0], X_embedded[p_idx][1], marker= "o", color=pal[assigned_clusters[p_idx]], alpha=0.2)
     for p_idx, centroid in enumerate(centers):
         plt.plot(centroid[0], centroid[1], marker= "o", color=pal[p_idx], markersize=10)
-    plt.title(configname+' [trial=%d][F1=%.2f, Purity=%.2f, Comp=%.2f]'%(trial, metrics[0],metrics[1],metrics[2]))
-    plt.savefig(now_str+'/BL-'+configname+'-clustered-data-'+str(trial)+'.png')
+    plt.title(configname+' [Trial=%d, classes=%d][F1=%.2f, Purity=%.2f]'%(trial, nclasses, metrics[0],metrics[1]))
+    plt.savefig(now_str+'/'+configname+'-'+dataset+'-'+str(trial)+'.png') 
     plt.close(fig)
     
-def plot_offlineBL(configname, X_embedded, points, assigned_clusters, pal, trial, metrics, now_str):
+def plot_offlineBL(configname, dataset, X_embedded, points, assigned_clusters, pal, trial, nclasses, metrics, now_str):
     fig = plt.figure(figsize=(10,10))
     for p_idx in range(len(X_embedded)):
         if p_idx in map(int, points):
             plt.plot(X_embedded[p_idx][0], X_embedded[p_idx][1], marker= "o", color=pal[assigned_clusters[p_idx]], markersize=10)
         else:
             plt.plot(X_embedded[p_idx][0], X_embedded[p_idx][1], marker= "o", color=pal[assigned_clusters[p_idx]], alpha=0.2)
-    plt.title(configname+' [Trial=%d][F1=%.2f, Purity=%.2f, Comp=%.2f]'%(trial, metrics[0],metrics[1],metrics[2]))
-    plt.savefig(now_str+'/BL-'+configname+'-clustered-data-'+str(trial)+'.png')
+    plt.title(configname+' [Trial=%d, classes=%d][F1=%.2f, Purity=%.2f]'%(trial, nclasses, metrics[0],metrics[1]))
+    plt.savefig(now_str+'/'+configname+'-'+dataset+'-'+str(trial)+'.png')
     plt.close(fig)
     
     

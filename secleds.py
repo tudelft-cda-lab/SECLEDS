@@ -20,7 +20,7 @@ from baseline_algos import StreamKM_init, StreamKM_cluster
 
 from helpers import format_scores, plot_votes, plot_over_time, shuffle_stream, plot_proto, plot_seq, plot_data, plot_all, plot_onlineBL, plot_offlineBL, plot_heatmap, plot_medoids, add_drift, plot_letters, prototype_distance
 from cython_sources.eval_pairwise import adjacency_accuracy, evaluate_purity_complete
-from evaluations import evaluate_PR, proto_spread,  proto_purity
+from evaluations import evaluate_PR,  proto_purity
 from data_generation import read_curves, read_chars, read_points, read_traffic
 
 import GLOBALS
@@ -45,9 +45,12 @@ config = configparser.ConfigParser()
 config.sections()
 config.read(inifile)
 
-secleds_version = config['ALGOS']['mainconfig']
+secleds_version = config['ALGOS']['mainconfig'].replace(' ','').split(',')
+secleds_version = list(filter(None, secleds_version))
 online_baselines = config['ALGOS']['online_baselines'].replace(' ','').split(',')
+online_baselines = list(filter(None, online_baselines))
 offline_baselines = config['ALGOS']['offline_baselines'].replace(' ','').split(',')
+offline_baselines = list(filter(None, offline_baselines))
 
 PLOT_TO_2D = config['EXP'].getboolean('plot_to_2d')
 DRIFT = config['EXP'].getboolean('drift')
@@ -69,7 +72,7 @@ fname = now_str+'/exp-results.txt'
 # -------- Constant mappings
 pal = sns.color_palette("hls", nclasses)
 OT_pal = ['aqua', 'blue', 'green','orange', 'palevioletred', 'red', 'maroon',  'magenta', 'mediumorchid']
-MET_OT = ['purity', 'complete', 'precision', 'recall', 'F1', 'mistakes', 'protospread',  'time-to-cluster']
+MET_OT = ['purity', 'complete', 'precision', 'recall', 'F1', 'mistakes',  'time-to-cluster']
 BL_NAMES = ['BanditPAM', 'fasterPAM',  'MiniBatchKMeans', 'CluStream', 'StreamKM']
 algorithms = {
     # SECLEDS flavors
@@ -130,16 +133,16 @@ plot_heatmap(X, labs, classes, DATASET, now_str, 20, "", metadata)
 # ----------------------------------------------------------             4. Set up experiments
 print('Setting up experiments ...')
 configs = []
-if len(secleds_version) >= 1 and secleds_version != '':
-    configs.extend([(secleds_version, algorithms[secleds_version])])
-if len(online_baselines) >= 1 and online_baselines[0] != '':
+if len(secleds_version) >= 1:
+    configs.extend([(x, algorithms[x]) for x in secleds_version])
+if len(online_baselines) >= 1:
     configs.extend([(x, algorithms[x]) for x in online_baselines])
 if len(configs) == 0:
     print('No streaming clustering algorithms given. Exiting...')
     sys.exit()
 strs = [x for x,y in configs]
 trials = {key: [None]*ntrials for key in strs}
-if offline_baselines[0] != '':
+if len(offline_baselines) >= 1:
     for olbl in offline_baselines:
         trials[olbl] = [None]*ntrials
 if VERBOSE:
@@ -182,15 +185,15 @@ for trial in range(1, ntrials + 1):
             X_exp_embedded = copy.deepcopy(drifted)  # or tsne()
 
             if PLOT_EXTRAS:
-                plot_data(X_exp_embedded, labs, classdict, pal, DATASET, now_str, '-drifted' + str(trial))
-            plot_heatmap(X_exp, labs, classes, DATASET, now_str, 20, '-drifted' + str(trial), metadata)
+                plot_data(X_exp_embedded, labs, classdict, pal, DATASET, now_str, '-drifted-' + str(trial))
+            plot_heatmap(X_exp, labs, classes, DATASET, now_str, 20, '-drifted-' + str(trial), metadata)
         elif DATASET == 'points':
             drifted = add_drift(DATASET, X, {}, drift_factor)
             X_exp = copy.deepcopy(drifted)
             X_exp_embedded = copy.deepcopy(drifted)  # or tsne()
 
             if PLOT_EXTRAS:
-                plot_data(X_exp_embedded, labs, classdict, pal, DATASET, now_str, '-drifted' + str(trial))
+                plot_data(X_exp_embedded, labs, classdict, pal, DATASET, now_str, '-drifted-' + str(trial))
 
 
     #     1. BanditPAM:
@@ -210,21 +213,21 @@ for trial in range(1, ntrials + 1):
 
         #       Evaluate BanditPAM:
         pairs = itertools.combinations(range(len(labs)), 2)
-        (bpurity, bcomplete) = evaluate_purity_complete(bandit_labels, labs)
         (bp_purity, bc_discovered) = proto_purity(proto_idx, labs, nclasses)
         if not SKIP_EVAL:
+            (bpurity, bcomplete) = evaluate_purity_complete(bandit_labels, labs)
             (bTP, bTN, bFP, bFN) = adjacency_accuracy(bandit_labels, labs, pairs)
             (bprecision, brecall, bf1) = evaluate_PR(bTP, bTN, bFP, bFN)
             bmistakes = (bFP + bFN) / (bTP + bTN + bFP + bFN)
 
         # Plot BanditPAM
         if PLOT_EXTRAS:
-            plot_offlineBL('BanditPAM', X_exp_embedded, points, bandit_labels, pal, trial,
-                           [bf1, bpurity, bcomplete], now_str)
+            plot_offlineBL('BanditPAM', DATASET, X_exp_embedded, points, bandit_labels, pal, trial, nclasses,
+                           [bf1, bpurity], now_str)
         if DATASET == 'multi-chars':
             pass  # plot_letters('BanditPAM', trial, prototypes, nclasses, 1, DATASET, now_str, meta)
         else:
-            plot_medoids('BanditPAM', trial, prototypes, nclasses, 1, DATASET, now_str, meta)
+            plot_medoids('BanditPAM', trial, prototypes, nclasses, 1, bp_purity, DATASET, now_str, meta)
 
         if VERBOSE:
             print('bpam time ', (bPAM_end - bPAM_start))
@@ -240,7 +243,7 @@ for trial in range(1, ntrials + 1):
 
 
     centroids = None
-    total_tp, total_tn, total_fp, total_fn = 0, 0, 0, 0
+    total_tp, total_tn, total_fp, total_fn, init_purity, init_complete = 0, 0, 0, 0, -1, -1
     proto_dist = None
     votesOT[trial] = {}
     BL_MODEL = None
@@ -291,8 +294,8 @@ for trial in range(1, ntrials + 1):
             plt.close()
         # Start evaluation
         pairs = itertools.combinations(range(batchsize), 2)
-        (init_purity, init_complete) = evaluate_purity_complete(assigned_clusters[:batchsize], labs[:batchsize])
         if not SKIP_EVAL:
+            (init_purity, init_complete) = evaluate_purity_complete(assigned_clusters[:batchsize], labs[:batchsize])
             (total_tp, total_tn, total_fp, total_fn) = adjacency_accuracy(assigned_clusters[:batchsize],
                                                                       labs[:batchsize], pairs)
         ### +++ INIT END +++
@@ -344,19 +347,13 @@ for trial in range(1, ntrials + 1):
             if len(assigned_clusters[batchsize:]) > 0:
                 _ttc = (end_clustering - start_clustering)
                 temp_metric_['time-to-cluster'] += _ttc
-                if config_name in BL_NAMES:
-                    temp_metric_['protospread'][zidx] = 0.0
-                else:
-                    spread = 1.0
-                    if False:#not SKIP_EVAL:
-                        spread = proto_spread(proto_dist)
-                        spread = sum(spread) / float(len(spread))
-                    temp_metric_['protospread'][zidx] = spread
 
-                pre, rec, _f1, tot = -1, -1, -1, -1
-                (pur, com) = evaluate_purity_complete(assigned_clusters[batchsize:], labs[batchsize:pidx + 1])
+
+                pur, com, pre, rec, _f1, tot = -1, -1, -1, -1, -1, -1
+                
 
                 if not SKIP_EVAL:
+                    (pur, com) = evaluate_purity_complete(assigned_clusters[batchsize:], labs[batchsize:pidx + 1])
                     (tp, tn, fp, fn) = adjacency_accuracy(assigned_clusters, labs, pidx, batchsize)
 
                     total_tp += tp
@@ -369,7 +366,7 @@ for trial in range(1, ntrials + 1):
                 m = total_fp + total_fn
                 tot = c + m
 
-                temp_metric_['mistakes'][zidx] = m / tot if tot > 0 else 0
+                temp_metric_['mistakes'][zidx] = m / tot if tot > 0 else -1
                 temp_metric_['purity'][zidx] = pur
                 temp_metric_['complete'][zidx] = com
                 temp_metric_['precision'][zidx] = pre
@@ -400,12 +397,12 @@ for trial in range(1, ntrials + 1):
         if VERBOSE:
             print('Internal clustering time ', time_to_cluster)
 
-        p_purity, c_discovered, precision, recall, f1, str_true, str_pred = -1, -1, -1, -1, -1, '', ''
+        purity, complete, p_purity, c_discovered, precision, recall, f1, str_true, str_pred = -1, -1, -1, -1, -1, -1, -1, '', ''
         if config_name not in BL_NAMES:
             (p_purity, c_discovered) = proto_purity(proto_idx, labs, nclasses)
-        (purity, complete) = evaluate_purity_complete(assigned_clusters[batchsize:], labs[batchsize:])
-
+        
         if not SKIP_EVAL:
+            (purity, complete) = evaluate_purity_complete(assigned_clusters[batchsize:], labs[batchsize:])
             (precision, recall, f1) = evaluate_PR(total_tp, total_tn, total_fp, total_fn)
             str_true = copy.deepcopy(labs)
             str_true = ''.join([str(x) for x in str_true])
@@ -423,20 +420,14 @@ for trial in range(1, ntrials + 1):
 
 
         ### +++ PLOT CLUSTERING RESULT +++
-        if config_name not in BL_NAMES:
-            spread = '|-|-|'
-            if False:#not SKIP_EVAL:
-                spread = proto_spread(proto_dist)
-                spread = '|'.join([str(x) for x in spread])
-
         if config_name in BL_NAMES:
             if PLOT_EXTRAS:
-                plot_onlineBL(config_name, X_exp_embedded, centroids, assigned_clusters, pal, trial,
-                          [f1, purity, complete], now_str)
+                plot_onlineBL(config_name, DATASET, X_exp_embedded, centroids, assigned_clusters, pal, trial, nclasses,
+                          [f1, purity], now_str)
         else:
             if PLOT_EXTRAS:
                 plot_all(config_name, (trial, nclasses, nprototypes), DATASET,
-                         (f1, init_purity, init_complete, purity, complete, p_purity, c_discovered), spread,
+                         (f1, init_purity, purity, p_purity, c_discovered),
                          assigned_clusters, proto_idx, X_exp_embedded, ann_new, pal, classes, pvotes, now_str)
                 ### Plotting final medoids
             if metadata != {}:
@@ -444,9 +435,9 @@ for trial in range(1, ntrials + 1):
             else:
                 meta = None
             if DATASET == 'multi-chars':
-                plot_letters(config_name, trial, prototypes, nclasses, nprototypes, DATASET, now_str, meta)
+                pass #plot_letters(config_name, trial, prototypes, nclasses, nprototypes, DATASET, now_str, meta)
             else:
-                plot_medoids(config_name, trial, prototypes, nclasses, nprototypes, DATASET, now_str, meta)
+                plot_medoids(config_name, trial, prototypes, nclasses, nprototypes, p_purity, DATASET, now_str, meta)
         print('plotting done')
     if 'BanditPAM' in offline_baselines:
         str_true, str_pred = '', ''
@@ -464,7 +455,8 @@ for trial in range(1, ntrials + 1):
 print('Plotting final stuff')
 
 if PLOT_EXTRAS:
-    plot_votes(votesOT, nclasses, now_str)
+    if not SKIP_EVAL:
+        plot_votes(votesOT, nclasses, now_str)
     offline_baseline = {}
     for _m_, mname in enumerate(MET_OT):
         if 'BanditPAM' in offline_baselines:
