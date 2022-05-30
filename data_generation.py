@@ -203,13 +203,6 @@ def read_points(n_samples, nclasses, saved_path):
     meta = [str(i) + '|' + str(l) for i, l in zip(ann, labs)]
     dist = X  # get_distmatrix(X, 'stat')
 
-
-
-
-        
-    
-    
-    
     return (X, ann, labs, dist, classdict, meta)
 
 # Read univariate (sine curve)
