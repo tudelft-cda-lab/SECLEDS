@@ -2,13 +2,12 @@ KMedoids = None
 CluStream = None
 STREAMKMeans = None
 MiniBatchKMeans = None
-print('kmediod is none', KMedoids)
+
 # banditPAM baseline
 def Bpam_cluster(exp_data, nclasses, metadata):
     global KMedoids
     if not KMedoids:
         from banditpam import KMedoids
-        print('Imported successfully', KMedoids)
     bandit_kmed = KMedoids(n_medoids=nclasses, algorithm="BanditPAM")
     z = bandit_kmed.fit(exp_data, 'L2', 'mnist')
     bandit_labels = [int(x) for x in bandit_kmed.labels]
@@ -26,7 +25,6 @@ def CluStream_init(data, labs, nprototypes, nclasses, classdict):
     global CluStream
     if not CluStream:
         from river.cluster import CluStream
-        print('Module loaded', CluStream)    
     prototypes = []
     proto_idx = []
     representative = None
@@ -55,7 +53,6 @@ def StreamKM_init(data, labs, nprototypes, nclasses, classdict):
     global STREAMKMeans
     if not STREAMKMeans:
         from river.cluster import STREAMKMeans
-        print('Module loaded successfully', STREAMKMeans)
     prototypes = []
     proto_idx = []
     representative = None
@@ -83,7 +80,6 @@ def MiniBatch_init(data, labs, nprototypes, nclasses, classdict):
     global MiniBatchKMeans
     if not MiniBatchKMeans:
         from sklearn.cluster import MiniBatchKMeans
-        print('Loaded successfully', MiniBatchKMeans)
     prototypes = []
     proto_idx = []
     representative = None
