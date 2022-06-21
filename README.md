@@ -7,7 +7,7 @@ SECLEDS is a real-time sequence clustering variant of the popular k-medoids algo
 Libraries required:
 - `python3`
 - `cython`
-- `dtw`
+- `dtw-python`
 - {`river's CluStream and STREAMKMeans` | `banditpam` | `scikitlearn's minibatchkmeans`} (depending on which baselines are executed)
 
 The SECLEDS cluster assignment and update modules are implemented using Cython. To compile that part of the code, use the following command:
