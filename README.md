@@ -1,6 +1,8 @@
 # SECLEDS: Sequence Clustering in Evolving Data Streams via Multiple Medoids and Medoid Voting
 
-SECLEDS is a real-time sequence clustering variant of the popular k-medoids algorithm that uses multiple prototypes per cluster and a prototype voting scheme. 
+SECLEDS is a real-time sequence clustering variant of the popular k-medoids algorithm that uses multiple prototypes per cluster and a prototype voting scheme. This repository accompanies our publication:
+
+"SECLEDS: Sequence Clustering in Evolving Data Streams via Multiple Medoids and Medoid Voting" at ECML/PKDD'22.
 
 ## Installation
 
@@ -71,3 +73,15 @@ There is a script that allows to generate new synthetic streaming datasets with 
 - `dataType`: Data type of the individual items in the stream. Choose from {sine-curve | blobs | circles}.
 - `k`: Number of classes in the stream.
 - `N`: Total items in the stream.
+
+**If you use SECLEDS in a scientific work, consider citing the following paper:**
+
+```
+@inproceedings{nadeem2022secleds,
+  title={SECLEDS: Sequence Clustering in Evolving Data Streams via Multiple Medoids and Medoid Voting},
+  author={Nadeem, Azqa and Verwer, Sicco},
+  booktitle={In proceedings of ECML/PKDD},
+  publisher={Springer},
+  year={2022}
+}
+```
