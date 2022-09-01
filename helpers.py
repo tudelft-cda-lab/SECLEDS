@@ -282,6 +282,8 @@ def plot_proto(fig, config_name, assigned_clusters, proto_idx, X_embedded_, ann,
     for i, txt in enumerate(protoidx):
         if GLOBALS.DEBUG:
             print(i, txt, 'annotate', classes[assigned_clusters[txt]])
+        if assigned_clusters[txt] is None:
+            continue
         plt.plot(X_embedded[i][0], X_embedded[i][1], marker= "o", color=pal[assigned_clusters[txt]])
         #plt.annotate(txt, (X_embedded[i][0], X_embedded[i][1]), color=pal[assigned_clusters[i]]) #plot seqID
         plt.annotate(classes[assigned_clusters[txt]], (X_embedded[i][0], X_embedded[i][1]), color=pal[assigned_clusters[txt]]) #plot class label
@@ -309,6 +311,8 @@ def plot_seq(fig, config_name, assigned_clusters, proto_idx, X_embedded_, ann, p
     
     
     for i, txt in enumerate(protoidx):
+        if assigned_clusters[txt] is None:
+            continue
         clid = i%len(pvotes[0])
         plt.plot(X_embedded[i][0], X_embedded[i][1], marker= "o", color=pal[assigned_clusters[txt]])
         #plt.annotate(txt, (X_embedded[i][0], X_embedded[i][1]), color=pal[assigned_clusters_[txt]])
@@ -377,6 +381,8 @@ def plot_data(X_embedded, labs, classdict, pal, dataset, now_str, name = ""):
         tupple = X_embedded[i]
         if type(tupple[0]) == tuple:
             tupple = [x[0] for x in tupple] # Todo: handle extra dimensions
+        if labs[i] is None:
+            continue
         plt.plot(tupple[0],tupple[1], marker= "o", color=pal[classdict[labs[i]]], alpha=0.5, label=labs[i])
         #plt.annotate(labs[i], (tupple[0], tupple[1]), color=pal[classdict[labs[i]]], alpha=0.2)
     legend_without_duplicate_labels(ax)
@@ -482,7 +488,8 @@ def plot_medoids(config_name, trial, prototypes, nclasses, nprototypes, p_purity
     
     fig = plt.figure(figsize=(10,5))
     
-    plt.title('Final medoids [%s][Purity_proto=%.2f]\n[trial=%d, classes=%d, prototypes=%d]'%(config_name, p_purity, trial, nclasses, nprototypes)) 
+    #plt.title('Final medoids [%s][Purity_proto=%.2f]\n[trial=%d, classes=%d, prototypes=%d]'%(config_name, p_purity, trial, nclasses, nprototypes))
+    plt.title('Final medoids [run=%d, classes=%d, prototypes=%d]'%(trial, nclasses, nprototypes))	
     
     df = pd.DataFrame(sampled, index=identifiers)
     ax = sns.heatmap(df, center=0.0)

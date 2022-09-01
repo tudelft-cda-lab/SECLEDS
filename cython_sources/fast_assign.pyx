@@ -8,7 +8,7 @@ import GLOBALS
 
 # IMPL3: Baseline with exact stat distance calculation
 def st_exact_assign(prototypes, point, assigned_clusters, proto_dist, pvotes, _):
-    cdef float minimum_distance = 10000000
+    cdef float minimum_distance = float("inf")
     cdef long long int minimum_idx = -1
     cdef long int cp_idx = -1 # closest proto index
     cdef float distance
@@ -42,14 +42,15 @@ def st_exact_assign(prototypes, point, assigned_clusters, proto_dist, pvotes, _)
 # IMPL2: Baseline with exact distance calculation (voting enabled)
 def exact_assign(prototypes, point, assigned_clusters, proto_dist, pvotes, _):
     
-    cdef float minimum_distance = 10000000
+    cdef float minimum_distance = float("inf")
     cdef long long int minimum_idx = -1
     cdef long int cp_idx = -1 # closest proto index
-    cdef float distance
-    cdef long int clustersize
+    #cdef long int fp_idx = -1 # farthest proto index
+    cdef float distance = 0.0
+    cdef long int clustersize = 0
     
     for cidx, cluster in enumerate(prototypes): # for each cluster 'cluster'
-        distance = 0
+        distance = 0.0
         clustersize = len(cluster)
         distances = [0.0]*clustersize
         for idx, prototype in enumerate(cluster): # each 'prototype' 
@@ -63,11 +64,11 @@ def exact_assign(prototypes, point, assigned_clusters, proto_dist, pvotes, _):
             minimum_distance = distance
             minimum_idx = cidx
             cp_idx = np.argmin(distances)
-            fp_idx = np.argmax(distances)
+            #fp_idx = np.argmax(distances)
 
     assigned_clusters.append(minimum_idx)
     pvotes[minimum_idx] = [x+1 if xid == cp_idx else x*0.90 for xid, x in enumerate(pvotes[minimum_idx])] # all items in this cluster receive a penalty. Do we penalize other clusters too?
     GLOBALS.CLOSEST[minimum_idx] = cp_idx
-    GLOBALS.FARTHEST[minimum_idx] = fp_idx
+    #GLOBALS.FARTHEST[minimum_idx] = fp_idx
     
     return (minimum_idx, assigned_clusters, pvotes)
