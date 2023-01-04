@@ -23,6 +23,7 @@ from cython_sources.eval_pairwise import adjacency_accuracy, evaluate_purity_com
 from evaluations import evaluate_PR,  proto_purity
 from data_generation import read_curves, read_chars, read_points, read_traffic
 
+from explanations import explain_all_data, explain_cluster
 import GLOBALS
 
 parser = argparse.ArgumentParser(description='SECLEDS: Real-time sequence clustering via k-medoids.')
@@ -108,6 +109,7 @@ elif DATASET == 'multi-chars':
     classes = classes[:nclasses]
     if SAVED_PATH != '':
         (X, ann, labs, dist, classdict, metadata) = read_chars(classes, SAVED_PATH)
+    
 elif DATASET == 'multi-traffic':
     if SAVED_PATH != '':
         (X, ann, labs, dist, classdict, metadata) = read_traffic(nclasses, SAVED_PATH)
@@ -172,6 +174,7 @@ for trial in range(1, ntrials + 1):
 
     ann_new = [x for x, y in enumerate(X)]  # IDs again
 
+    
     ## Apply drift
     X_exp = copy.deepcopy(X)
     X_exp_embedded = copy.deepcopy(X_embedded)
@@ -271,6 +274,20 @@ for trial in range(1, ntrials + 1):
         votesOT[trial][config_name] = {}
         for _cl in range(nclasses):
             votesOT[trial][config_name][_cl] = {key: [0] * len(X_exp[batchsize:]) for key in range(nprototypes)}
+        
+        n_so_far = batchsize
+        means_all, stds_all = None, None
+        if 'st_' in ' '.join(func_names) and DATASET in ['uni-sine', 'multi-chars']:
+            means_all, stds_all = [0.0], [0.0]
+        else:
+            #print(X_exp[0])
+            #print(isinstance(X_exp[0][0], tuple), len(X_exp[0]) > 2)
+            if isinstance(X_exp[0][0], tuple):
+                means_all, stds_all = [0.0]*len(X_exp[0][0]), [0.0]*len(X_exp[0][0])
+            elif len(X_exp[0]) == 2:
+                means_all, stds_all = [0.0]*len(X_exp[0]), [0.0]*len(X_exp[0])
+            else:
+                means_all, stds_all = [0.0], [0.0]
 
         ### +++ INIT START +++
         print('########## Init starting... ##########')
@@ -287,6 +304,8 @@ for trial in range(1, ntrials + 1):
                                                                                                   labs[0:batchsize],
                                                                                                   nprototypes, nclasses,
                                                                                                   classdict)
+        
+        
         # plot the protos
         if RT_ANIMATION:
             plot_proto(fig, config_name, assigned_clusters, proto_idx, X_exp_embedded, ann_new, pal, classes)
@@ -340,11 +359,16 @@ for trial in range(1, ntrials + 1):
                                                                                                     representative,
                                                                                                     _buffer)
                 end_clustering = time.time()  # Time end
-
+            
                 if not SKIP_EVAL:
                     for __c in range(nclasses):
                         for __p in range(nprototypes):
                             votesOT[trial][config_name][__c][__p][zidx] = pvotes[__c][__p]
+            
+            ### Explain data seen so far with mean and stdev
+            (n_so_far, means_all, stds_all) = explain_all_data(n_so_far, means_all, stds_all, point)
+            
+            
             if len(assigned_clusters[batchsize:]) > 0:
                 _ttc = (end_clustering - start_clustering)
                 temp_metric_['time-to-cluster'] += _ttc
@@ -393,6 +417,12 @@ for trial in range(1, ntrials + 1):
                     metrics_over_time[mname][config_name] = metrics_over_time[mname][config_name] + temp_metric_[mname]
         ### +++ STREAM ENDS +++
 
+        ### Explain final clusters with mean and stdev
+        if config_name not in BL_NAMES:
+            (means_clus, stds_clus) = explain_cluster(prototypes)
+            print('Means for all features:', means_all, means_clus)
+            print('Stdevs for all features:', stds_all, stds_clus)
+                
         ### +++ EVALUATE +++
         time_to_cluster = temp_metric_['time-to-cluster']
         if VERBOSE:
