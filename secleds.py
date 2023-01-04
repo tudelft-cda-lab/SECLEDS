@@ -404,10 +404,11 @@ for trial in range(1, ntrials + 1):
         if not SKIP_EVAL:
             (purity, complete) = evaluate_purity_complete(assigned_clusters[batchsize:], labs[batchsize:])
             (precision, recall, f1) = evaluate_PR(total_tp, total_tn, total_fp, total_fn)
-            str_true = copy.deepcopy(labs)
-            str_true = ''.join([str(x) for x in str_true])
-            str_pred = copy.deepcopy(assigned_clusters)
-            str_pred = ''.join([str(x) for x in str_pred])
+        str_true = copy.deepcopy(labs)
+        str_true = '|'.join([str(x) for x in str_true])
+        str_pred = copy.deepcopy(assigned_clusters)
+        str_pred = [-1 if x is None else x for x in str_pred]
+        str_pred = '|'.join([str(x) for x in str_pred])
         tupple = (round(init_purity, 4), round(init_complete, 4), round(purity, 4), round(complete, 4),
                   round(precision, 4), round(recall, 4), round(f1, 4), round(p_purity, 4),
                   round(c_discovered, 4), total_tp, total_tn, total_fp, total_fn, GLOBALS.count_dist,
@@ -441,11 +442,12 @@ for trial in range(1, ntrials + 1):
         print('plotting done')
     if 'BanditPAM' in offline_baselines:
         str_true, str_pred = '', ''
-        if not SKIP_EVAL:
-            str_true = copy.deepcopy(labs)
-            str_true = ''.join([str(x) for x in str_true])
-            str_pred = copy.deepcopy(bandit_labels)
-            str_pred = ''.join([str(x) for x in str_pred])
+        #if not SKIP_EVAL:
+        str_true = copy.deepcopy(labs)
+        str_true = '|'.join([str(x) for x in str_true])
+        str_pred = copy.deepcopy(bandit_labels)
+        str_pred = [-1 if x is None else x for x in str_pred]
+        str_pred = '|'.join([str(x) for x in str_pred])
 
         trials[('BanditPAM')][trial - 1] = (
         -1, -1, round(bpurity, 4), round(bcomplete, 4), round(bprecision, 4), round(brecall, 4), round(bf1, 4),

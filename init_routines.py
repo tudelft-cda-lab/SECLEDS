@@ -144,7 +144,7 @@ def Kplusplus(batch, nprototypes, nclasses):
             
             # compute min distance from one of the closest chosen protos
             latest_proto = init_prototypes[-1]
-            d = round((dtw(batch[latest_proto], batch[candidate], distance_only=True, dist_method="euclidean").distance)**2, 2) 
+            d = round((dtw(batch[latest_proto], batch[candidate], dist_method="euclidean").distance)**2, 2) 
             GLOBALS.count_dist += 1
             dists.append(d)
             
