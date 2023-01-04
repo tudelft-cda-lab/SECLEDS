@@ -5,7 +5,72 @@ import numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
 from dtw import dtw
 import GLOBALS 
+import statistics
+from scipy.spatial.distance import cdist
 
+# IMPL4: Baseline with exact aggregated distance calculation
+def aggr_exact_assign(prototypes, point, assigned_clusters, proto_dist, pvotes, _):
+    cdef float minimum_distance = float("inf")
+    cdef long long int minimum_idx = -1
+    cdef long int cp_idx = -1 # closest proto index
+    cdef float distance
+    cdef long int clustersize
+    cdef list point_mean
+    cdef list prototype_mean
+    is_tuple = False
+    is_seq = False
+    
+    if isinstance(point[0], tuple):
+        is_tuple = True
+    if len(point) > 2:
+        is_seq = True
+    
+    
+    
+    if is_tuple:
+        # compute mean of each dimension
+        xa, xb = zip(*point)
+        point_mean = [(statistics.mean(xa), statistics.mean(xb))]
+    elif is_seq:
+        point_mean = [statistics.mean(point)]
+    else:
+        point_mean = point
+    
+    for cidx, cluster in enumerate(prototypes): # for each cluster 'cluster'
+        distance = 0
+        clustersize = len(cluster)
+        distances = [0.0]*clustersize
+        for idx, prototype in enumerate(cluster): # each 'prototype'
+            if is_tuple:
+                # compute mean of each dimension
+                xa, xb = zip(*prototype)
+                prototype_mean = [(statistics.mean(xa), statistics.mean(xb))]
+            elif is_seq:
+                prototype_mean = [statistics.mean(prototype)]
+            else:
+                prototype_mean = prototype 
+
+            distances[idx] = cdist(np.array(prototype_mean).reshape(1, -1),np.array(point_mean).reshape(1, -1), 'euclidean')[0][0]
+            GLOBALS.count_dist += 1
+        distance = sum(distances)
+        distance = distance / float(clustersize) # average distance from all protots
+        if minimum_distance > distance:
+            minimum_distance = distance
+            minimum_idx = cidx
+            cp_idx = np.argmin(distances)
+            fp_idx = np.argmax(distances)
+    
+    assigned_clusters.append(minimum_idx)
+    #pvotes[minimum_idx][cp_idx] += 1
+    #pvotes[minimum_idx] = [x*0.90 for xid, x in enumerate(pvotes[minimum_idx])]
+    pvotes[minimum_idx] = [x+1 if xid == cp_idx else x*0.90 for xid, x in enumerate(pvotes[minimum_idx])] # all items in this cluster receive a penalty. Do we penalize other clusters too?
+    GLOBALS.CLOSEST[minimum_idx] = cp_idx
+    GLOBALS.FARTHEST[minimum_idx] = fp_idx
+    
+    return (minimum_idx, assigned_clusters, pvotes)
+    
+    
+    
 # IMPL3: Baseline with exact stat distance calculation
 def st_exact_assign(prototypes, point, assigned_clusters, proto_dist, pvotes, _):
     cdef float minimum_distance = float("inf")
@@ -54,7 +119,7 @@ def exact_assign(prototypes, point, assigned_clusters, proto_dist, pvotes, _):
         clustersize = len(cluster)
         distances = [0.0]*clustersize
         for idx, prototype in enumerate(cluster): # each 'prototype' 
-            distances[idx] = dtw(prototype, point, distance_only=True, dist_method="euclidean").distance
+            distances[idx] = dtw(prototype, point, dist_method="euclidean").distance
             GLOBALS.count_dist += 1
         distance = sum(distances)
         distance = distance / float(clustersize) # average distance from all protots

@@ -10,9 +10,9 @@ from collections import Counter
 import itertools, configparser, argparse
 
 # Importing source code
-from cython_sources.fast_assign import exact_assign, st_exact_assign
-from cython_sources.fast_update import prototypevoting_update, st_prototypevoting_update
-from init_routines import perfect_init, random_init, nonuniform_init, st_nonuniform_init
+from cython_sources.fast_assign import exact_assign, st_exact_assign, aggr_exact_assign
+from cython_sources.fast_update import prototypevoting_update, st_prototypevoting_update, aggr_prototypevoting_update
+from init_routines import perfect_init, random_init, nonuniform_init, st_nonuniform_init, aggr_nonuniform_init
 from baseline_algos import Bpam_cluster
 from baseline_algos import MiniBatch_init, MiniBatch_cluster
 from baseline_algos import CluStream_init, CluStream_cluster
@@ -76,8 +76,9 @@ MET_OT = ['purity', 'complete', 'precision', 'recall', 'F1', 'mistakes',  'time-
 BL_NAMES = ['BanditPAM', 'fasterPAM',  'MiniBatchKMeans', 'CluStream', 'StreamKM']
 algorithms = {
     # SECLEDS flavors
-    'SECLEDS': (nonuniform_init, st_exact_assign, st_prototypevoting_update),
-    'SECLEDS-dtw': (st_nonuniform_init, exact_assign, prototypevoting_update),
+    'SECLEDS': (st_nonuniform_init, st_exact_assign, st_prototypevoting_update),
+    'SECLEDS-aggr': (aggr_nonuniform_init, aggr_exact_assign, aggr_prototypevoting_update),
+    'SECLEDS-dtw': (nonuniform_init, exact_assign, prototypevoting_update),
     'SECLEDS-perfect-init' : (perfect_init, st_exact_assign, st_prototypevoting_update),
     'SECLEDS-perfect-init-dtw' : (perfect_init, exact_assign, prototypevoting_update),
     'SECLEDS-rand' : (random_init, st_exact_assign, st_prototypevoting_update),
