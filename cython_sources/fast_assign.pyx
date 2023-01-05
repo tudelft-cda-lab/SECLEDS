@@ -28,9 +28,12 @@ def aggr_exact_assign(prototypes, point, assigned_clusters, proto_dist, pvotes, 
     
     
     if is_tuple:
+        tupp = []
         # compute mean of each dimension
-        xa, xb = zip(*point)
-        point_mean = [(statistics.mean(xa), statistics.mean(xb))]
+        grouped_features = zip(*point)
+        for xa in grouped_features:
+            tupp.append(statistics.mean(xa))
+        point_mean = [tuple(tupp)]
     elif is_seq:
         point_mean = [statistics.mean(point)]
     else:
@@ -42,9 +45,12 @@ def aggr_exact_assign(prototypes, point, assigned_clusters, proto_dist, pvotes, 
         distances = [0.0]*clustersize
         for idx, prototype in enumerate(cluster): # each 'prototype'
             if is_tuple:
+                tupp = []
                 # compute mean of each dimension
-                xa, xb = zip(*prototype)
-                prototype_mean = [(statistics.mean(xa), statistics.mean(xb))]
+                grouped_features = zip(*prototype)
+                for xa in grouped_features:
+                    tupp.append(statistics.mean(xa))
+                prototype_mean = [tuple(tupp)]
             elif is_seq:
                 prototype_mean = [statistics.mean(prototype)]
             else:

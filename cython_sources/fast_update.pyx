@@ -130,9 +130,12 @@ def aggr_prototypevoting_update(prototypes, point, minimum_idx, proto_idx, pidx,
         
         
         if is_tuple:
+            tupp = []
             # compute mean of each dimension
-            xa, xb = zip(*least_value_proto)
-            least_value_proto_mean = [(statistics.mean(xa), statistics.mean(xb))]
+            grouped_features = zip(*least_value_proto)
+            for xa in grouped_features:
+                tupp.append(statistics.mean(xa))
+            least_value_proto_mean = [tuple(tupp)]
         elif is_seq:
             least_value_proto_mean = [statistics.mean(least_value_proto)]
         else:
@@ -142,9 +145,12 @@ def aggr_prototypevoting_update(prototypes, point, minimum_idx, proto_idx, pidx,
         distances = [0.0]*len(prototypes[minimum_idx])
         for idx, proto in enumerate(prototypes[minimum_idx]):
             if is_tuple:
+                tupp = []
                 # compute mean of each dimension
-                xa, xb = zip(*proto)
-                proto_mean = [(statistics.mean(xa), statistics.mean(xb))]
+                grouped_features = zip(*proto)
+                for xa in grouped_features:
+                    tupp.append(statistics.mean(xa))
+                proto_mean = [tuple(tupp)]
             elif is_seq:
                 proto_mean = [statistics.mean(proto)]
             else:

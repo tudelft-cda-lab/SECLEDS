@@ -58,7 +58,7 @@ async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 			dstport = int(netflow[7])
 			label = netflow[9]
 
-			
+			features = (pkts,bytes,srcport,dstport)
 			print('.', end=' ', flush=True)
 
 			pair = (srcip)
@@ -69,7 +69,7 @@ async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 			# If not, then add entry to the buffer
 			
 			# Add the netflow to the buffer
-			buffer[pair].append(pkts)
+			buffer[pair].append(features)
 			overallcount += 1
 
 			# Check if length == len. 
@@ -113,7 +113,7 @@ async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 				if run_clus:
 					seqcount += 1
 					seq = buffer[pair][0:_len]
-					#print('Clustering', pair, len(seq))
+					#print('Clustering', pair, len(seq), len(seq[0]))
 						
 					print('C', end=' ', flush=True)
 					data.append(seq)

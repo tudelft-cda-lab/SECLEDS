@@ -408,6 +408,8 @@ def plot_heatmap(X, labs, classes, dataset, now_str, max_each_class=20, name="",
     sampleIDs = {}
     samplesize = 5 #int(random.uniform(5, max_each_class))
     seqlength = 0
+    dim = 1
+    checked = False
     params = {'font.size': 16 } 
              
     plt.rcParams.update(params)
@@ -422,40 +424,44 @@ def plot_heatmap(X, labs, classes, dataset, now_str, max_each_class=20, name="",
 
         sampleIDs[i] = random.sample(thislab, samplesize) #thislab[:samplesize]#
         seqlength = max(max([len(X[x]) for x in sampleIDs[i]]), seqlength)
-
+        if not checked and type(X[sampleIDs[i][0]][0]) == tuple:
+            dim = len(X[sampleIDs[i][0]][0])
+            checked = True
+    
     sampled = [None]*(sum([len(x) for x in sampleIDs.values()]))
     identifiers= [None]*(sum([len(x) for x in sampleIDs.values()]))
-    counter = 0
     
-    for cid, samples in sampleIDs.items():
-        for sample in samples:
-            
-            if type(X[sample][0]) == tuple:
-                seq = [x[0] for x in X[sample]] # Todo: handle extra dimensions
-            else:
-                seq = X[sample]
-            seq = (seq + seqlength * [-1])[:seqlength]
-            sampled[counter] = seq
-            if meta != None:
-                identifiers[counter] = meta[sample]
-            else:
-                identifiers[counter] = sample
-            counter += 1
-    fig = plt.figure(figsize=(10,8))
-    plt.title('Temporal heatmap [%s] \nSampling %d items per class'%(dataset, samplesize))
-    df = pd.DataFrame(sampled, index=identifiers)
-    ax = sns.heatmap(df, center=0.0)
-    plt.setp(ax.get_yticklabels(),rotation=0)
     
+    for fid in range(dim):
+        counter = 0
+        for cid, samples in sampleIDs.items():
+            for sample in samples:
+                if type(X[sample][0]) == tuple:
+                    seq = [x[fid] for x in X[sample]] 
+                else:
+                    seq = X[sample]
+                seq = (seq + seqlength * [-1])[:seqlength]
+                sampled[counter] = seq
+                if meta != None:
+                    identifiers[counter] = meta[sample]
+                else:
+                    identifiers[counter] = sample
+                counter += 1
+        fig = plt.figure(figsize=(10,8))
+        plt.title('Temporal heatmap [%s] \nFeature [%d]\nSampling %d items per class'%(dataset, fid, samplesize))
+        df = pd.DataFrame(sampled, index=identifiers)
+        ax = sns.heatmap(df, center=0.0)
+        plt.setp(ax.get_yticklabels(),rotation=0)
+        
 
-    borders = [samplesize*i for i in range(1, len(classes))]
-    for border in borders:
-        ax.add_patch(Rectangle((0, border), seqlength, 0, ec='white', fc='none', lw=1.5))
-    plt.xlabel('Time/Dimensions')
-    plt.ylabel('Samples')
-    #plt.show()
-    plt.savefig(now_str+'/'+'input-'+dataset+name+'-temporal.png')
-    plt.close(fig)    
+        borders = [samplesize*i for i in range(1, len(classes))]
+        for border in borders:
+            ax.add_patch(Rectangle((0, border), seqlength, 0, ec='white', fc='none', lw=1.5))
+        plt.xlabel('Time/Dimensions')
+        plt.ylabel('Samples')
+        #plt.show()
+        plt.savefig(now_str+'/'+'input-'+dataset+name+'-feature'+str(fid)+'-temporal.png')
+        plt.close(fig)    
     return    
     
 # plot medoids
@@ -472,37 +478,40 @@ def plot_medoids(config_name, trial, prototypes, nclasses, nprototypes, p_purity
         identifiers = [x for x in range(len(sampled_))]
         
     seqlength = max([len(x) for x in sampled_])
-    sampled = []
+    sampled__ = []
+    handle_tuple = False
     # check dimensions
     
     if type(sampled_[0][0]) == tuple:
-        sampled = [[x[0] for x in seq] for seq in sampled_] # Todo: handle extra dimensions
-        
+        for i in range(len(sampled_[0][0])):
+            sampled__.append([[x[i] for x in seq] for seq in sampled_]) # Todo: handle extra dimensions
+        handle_tuple = True
     else:
-        sampled = sampled_
+        sampled__ = [sampled_]
     
-    # check padding needs    
-    if min([len(x) for x in sampled]) != seqlength:
-        sampled = [[(seq + seqlength * [-1])[:seqlength] for seq in seq_] for seq_ in sampled] 
- 
-    
-    fig = plt.figure(figsize=(10,5))
-    
-    #plt.title('Final medoids [%s][Purity_proto=%.2f]\n[trial=%d, classes=%d, prototypes=%d]'%(config_name, p_purity, trial, nclasses, nprototypes))
-    plt.title('Final medoids [run=%d, classes=%d, prototypes=%d]'%(trial, nclasses, nprototypes))	
-    
-    df = pd.DataFrame(sampled, index=identifiers)
-    ax = sns.heatmap(df, center=0.0)
-    plt.setp(ax.get_yticklabels(),rotation=0)
-    
-    borders = [samplesize*i for i in range(1, nclasses)]
-    for border in borders:
-        ax.add_patch(Rectangle((0, border), seqlength, 0, ec='white', fc='none', lw=0.5))
-    plt.xlabel('Time/Dimensions')
-    plt.ylabel('Sample ID')
-    #plt.show()
-    plt.savefig(now_str+'/'+'medoids-'+config_name+'-'+dataset+'-'+str(trial)+'.png')
-    plt.close(fig)    
+    for fid, sampled in enumerate(sampled__):
+        # check padding needs    
+        if min([len(x) for x in sampled]) != seqlength:
+            sampled = [[(seq + seqlength * [-1])[:seqlength] for seq in seq_] for seq_ in sampled] 
+     
+        
+        fig = plt.figure(figsize=(10,5))
+        
+        #plt.title('Final medoids [%s][Purity_proto=%.2f]\n[trial=%d, classes=%d, prototypes=%d]'%(config_name, p_purity, trial, nclasses, nprototypes))
+        plt.title('Final medoids [feature=%d, run=%d, classes=%d, prototypes=%d]'%(fid, trial, nclasses, nprototypes))	
+        
+        df = pd.DataFrame(sampled, index=identifiers)
+        ax = sns.heatmap(df, center=0.0)
+        plt.setp(ax.get_yticklabels(),rotation=0)
+        
+        borders = [samplesize*i for i in range(1, nclasses)]
+        for border in borders:
+            ax.add_patch(Rectangle((0, border), seqlength, 0, ec='white', fc='none', lw=0.5))
+        plt.xlabel('Time/Dimensions')
+        plt.ylabel('Sample ID')
+        #plt.show()
+        plt.savefig(now_str+'/'+'medoids-'+config_name+'-'+dataset+'-trial'+str(trial)+'-feature'+str(fid)+'.png')
+        plt.close(fig)    
     return 
     
     

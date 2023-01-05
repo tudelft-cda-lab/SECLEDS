@@ -377,9 +377,12 @@ def Kplusplus_aggr(batch, nprototypes, nclasses):
         latest_proto = init_prototypes[-1]
         
         if is_tuple:
+            tupp = []
             # compute mean of each dimension
-            xa, xb = zip(*batch[latest_proto])
-            batch_latest_proto_mean = [(statistics.mean(xa), statistics.mean(xb))]
+            grouped_features = zip(*batch[latest_proto])
+            for xa in grouped_features:
+                tupp.append(statistics.mean(xa))
+            batch_latest_proto_mean = [tuple(tupp)]
         elif is_seq:
             batch_latest_proto_mean = [statistics.mean(batch[latest_proto])]
         else:
@@ -389,9 +392,12 @@ def Kplusplus_aggr(batch, nprototypes, nclasses):
         for candidate in batch_idx:
             # compute min distance from one of the closest chosen protos
             if is_tuple:
+                tupp = []
                 # compute mean of each dimension
-                xa, xb = zip(*batch[candidate])
-                batch_candidate_mean = [(statistics.mean(xa), statistics.mean(xb))]
+                grouped_features = zip(*batch[candidate])
+                for xa in grouped_features:
+                    tupp.append(statistics.mean(xa))
+                batch_candidate_mean = [tuple(tupp)]
             elif is_seq:
                 batch_candidate_mean = [statistics.mean(batch[candidate])]
             else:

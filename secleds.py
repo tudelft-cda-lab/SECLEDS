@@ -23,7 +23,7 @@ from cython_sources.eval_pairwise import adjacency_accuracy, evaluate_purity_com
 from evaluations import evaluate_PR,  proto_purity
 from data_generation import read_curves, read_chars, read_points, read_traffic
 
-from explanations import explain_all_data, explain_cluster
+from explanations import explain_all_data, explain_cluster, plot_distro
 import GLOBALS
 
 parser = argparse.ArgumentParser(description='SECLEDS: Real-time sequence clustering via k-medoids.')
@@ -113,13 +113,12 @@ elif DATASET == 'multi-chars':
 elif DATASET == 'multi-traffic':
     if SAVED_PATH != '':
         (X, ann, labs, dist, classdict, metadata) = read_traffic(nclasses, SAVED_PATH)
-        classes = list(classdict.values())
+        classes = list(classdict.keys())
 else:
     print('Something went wrong...')
     sys.exit(-1)
 
 class_distro = dict({k:int(v) for k,v in Counter(labs).items()})
-
 X_embedded = None
 if PLOT_TO_2D:
     X_embedded = TSNE(random_state=42, n_components =2).fit_transform(dist)
@@ -420,6 +419,7 @@ for trial in range(1, ntrials + 1):
         ### Explain final clusters with mean and stdev
         if config_name not in BL_NAMES:
             (means_clus, stds_clus) = explain_cluster(prototypes)
+            plot_distro(now_str, config_name, DATASET, trial, means_all, stds_all, means_clus, stds_clus)
             print('Means for all features:', means_all, means_clus)
             print('Stdevs for all features:', stds_all, stds_clus)
                 

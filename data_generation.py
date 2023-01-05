@@ -111,7 +111,7 @@ def parse_netflows(path, thresh=100):
         else:
             iat = 0
         previousTimestamp[key] = timestamp
-        tupple = avg_bytes  # options: duration#totbytes#avg_bytes#duration#, sport, dport)
+        tupple = (avg_bytes, iat, dport)  # options: duration#totbytes#avg_bytes#duration#, sport, dport)
         if key not in connections.keys():
             connections[key] = []
         connections[key].append(tupple)
@@ -335,10 +335,9 @@ def read_traffic(nclasses, path):
     print('Done reading netflows.')
 
     numbers = [x for x in range(nclasses)]
-    if len(labels) < nclasses:
-        labels.extend(numbers[len(labels):])
+    if len(set(labels)) < nclasses:
+        labels.extend(numbers[len(set(labels)):])
     classdict = {k: v for v, k in enumerate(set(labels))}
-
     print('Class distro ', Counter(labels).items())
 
     X = [x for x in netflows]  # Data
