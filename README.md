@@ -11,6 +11,7 @@ Libraries required:
 - `cython`
 - `dtw-python`
 - {`river's CluStream and STREAMKMeans` | `banditpam` | `scikitlearn's minibatchkmeans`} (depending on which baselines are executed)
+- `aiofiles` (for secleds-stream)
 
 The SECLEDS cluster assignment and update modules are implemented using Cython. To compile that part of the code, use the following command:
 
