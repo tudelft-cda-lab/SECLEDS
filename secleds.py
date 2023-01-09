@@ -62,6 +62,7 @@ COMPLEX_SHUFFLE = config['EXP'].getboolean('complex_shuffle')
 VERBOSE = config['EXP'].getboolean('verbose')
 RT_ANIMATION = config['EXP'].getboolean('realtime_animation')
 SHUFFLE_STREAM = config['EXP'].getboolean('shuffle_stream')
+EXPLAIN = config['EXP'].getboolean('explain')
 batch_factor = float(config['EXP']['batch_factor'])
 batchsize = int(nclasses*nprototypes*batch_factor)
 ntrials = int(config['EXP']['trials'])
@@ -366,7 +367,8 @@ for trial in range(1, ntrials + 1):
                             votesOT[trial][config_name][__c][__p][zidx] = pvotes[__c][__p]
             
             ### Explain data seen so far with mean and stdev
-            (n_so_far, means_all, stds_all) = explain_all_data(n_so_far, means_all, stds_all, point)
+            if EXPLAIN:
+                (n_so_far, means_all, stds_all) = explain_all_data(n_so_far, means_all, stds_all, point)
             
             
             if len(assigned_clusters[batchsize:]) > 0:
@@ -418,9 +420,9 @@ for trial in range(1, ntrials + 1):
         ### +++ STREAM ENDS +++
 
         ### Explain final clusters with mean and stdev
-        if config_name not in BL_NAMES:
-            (means_clus, stds_clus) = explain_cluster(prototypes)
-            plot_distro(now_str, config_name, DATASET, trial, means_all, stds_all, means_clus, stds_clus)
+        if EXPLAIN and config_name not in BL_NAMES:
+            (means_clus, stds_clus, central_protos) = explain_cluster(prototypes)
+            plot_distro(now_str, config_name, DATASET, trial, means_all, stds_all, means_clus, stds_clus, central_protos)
             print('Means for all features:', means_all, means_clus)
             print('Stdevs for all features:', stds_all, stds_clus)
                 

@@ -224,7 +224,7 @@ def format_scores(trials, dataset, nsamples, ntrials, batchsize, dim, nprototype
         perfs.append(perf)
 
     return perfs
-def prototype_distance(prototypes, dist_matrix=None, partial=False, newID=-1):
+def prototype_distance(prototypes, dist_matrix=None, partial=False, newID=-1, seq=False):
     if len(prototypes) == 1:
         return {(0,0): 0.0}     
     if partial:
@@ -233,7 +233,11 @@ def prototype_distance(prototypes, dist_matrix=None, partial=False, newID=-1):
                 if idx1 >= idx2:
                     continue   
                 if newID in [idx1,idx2]:
-                   dist = euclidean_distances(np.array(prototype1).reshape(1, -1),np.array(prototype2).reshape(1, -1))[0][0]    
+                   dist = -1
+                   if seq:
+                       dist = dtw(prototype1, prototype2, dist_method="euclidean").distance
+                   else:
+                       dist = euclidean_distances(np.array(prototype1).reshape(1, -1),np.array(prototype2).reshape(1, -1))[0][0]
                    dist_matrix[(idx1,idx2)] = dist
                    dist_matrix[(idx2,idx1)] = dist
              
@@ -243,7 +247,11 @@ def prototype_distance(prototypes, dist_matrix=None, partial=False, newID=-1):
             for idx2, prototype2 in enumerate(prototypes):
                 if idx1 >= idx2:
                     continue
-                dist = euclidean_distances(np.array(prototype1).reshape(1, -1),np.array(prototype2).reshape(1, -1))[0][0]
+                dist = -1
+                if seq:
+                    dist = dtw(prototype1, prototype2, dist_method="euclidean").distance
+                else:
+                    dist = euclidean_distances(np.array(prototype1).reshape(1, -1),np.array(prototype2).reshape(1, -1))[0][0]
                 dist_matrix[(idx1,idx2)] = dist
                 dist_matrix[(idx2,idx1)] = dist
     return dist_matrix
