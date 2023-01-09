@@ -58,6 +58,7 @@ DRIFT = config['EXP'].getboolean('drift')
 drift_factor = float(config['EXP']['drift_factor'])
 SKIP_EVAL = config['EXP'].getboolean('skip_eval')
 PLOT_EXTRAS = config['EXP'].getboolean('plot_extras')
+COMPLEX_SHUFFLE = config['EXP'].getboolean('complex_shuffle')
 VERBOSE = config['EXP'].getboolean('verbose')
 RT_ANIMATION = config['EXP'].getboolean('realtime_animation')
 SHUFFLE_STREAM = config['EXP'].getboolean('shuffle_stream')
@@ -164,10 +165,10 @@ for trial in range(1, ntrials + 1):
     print('\n----- TRIAL #', trial)
     if SHUFFLE_STREAM:
         if metadata == {}:
-            group = shuffle_stream(X, ann, labs, dist, X_embedded, classes, nprototypes, batchsize, SKIP_EVAL)
+            group = shuffle_stream(X, ann, labs, dist, X_embedded, classes, nprototypes, batchsize, COMPLEX_SHUFFLE)
             (X, ann, labs, dist, X_embedded) = zip(*group)
         else:
-            group = shuffle_stream(X, zip(ann, metadata), labs, dist, X_embedded, classes, nprototypes, batchsize, SKIP_EVAL)
+            group = shuffle_stream(X, zip(ann, metadata), labs, dist, X_embedded, classes, nprototypes, batchsize, COMPLEX_SHUFFLE)
             (X, ann_meta, labs, dist, X_embedded) = zip(*group)
             ann, metadata = zip(*ann_meta)
 

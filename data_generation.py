@@ -335,11 +335,12 @@ def read_traffic(nclasses, path):
     print('Done reading netflows.')
 
     numbers = [x for x in range(nclasses)]
-    if len(set(labels)) < nclasses:
-        labels.extend(numbers[len(set(labels)):])
-    classdict = {k: v for v, k in enumerate(set(labels))}
-    print('Class distro ', Counter(labels).items())
+    chars = list(set(labels))
+    if len(chars) < nclasses:
+        chars.extend(numbers[len(chars):])
 
+    classdict = {k: v for v, k in enumerate(set(chars))}
+    print('Classes: ', chars)
     X = [x for x in netflows]  # Data
     ann = [x for x, y in enumerate(X)]  # IDs
     labs = [x for x in labels]  # classes

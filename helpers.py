@@ -18,7 +18,7 @@ from matplotlib.patches import Rectangle
 from data_generation import generateCurve
 
 
-def shuffle_stream(X, ann, labs, dist, X_embedded, classes, nprototypes, batchsize, SKIP_EVAL):
+def shuffle_stream(X, ann, labs, dist, X_embedded, classes, nprototypes, batchsize, COMPLEX_SHUFFLE):
     ## Shuffle stream
     group = [(u, w, x, y, z) for (u, w, x, y, z) in zip(X, ann, labs, dist, X_embedded)]
     ## We cannot assume to know how big each class is in stream setting.
@@ -28,7 +28,7 @@ def shuffle_stream(X, ann, labs, dist, X_embedded, classes, nprototypes, batchsi
     init_batch = [None] * batchsize  # [None]*(nprototypes*len(classes))
     selected_ = [None] * batchsize  # [None]*(nprototypes*len(classes))
 
-    if SKIP_EVAL:
+    if not COMPLEX_SHUFFLE:
         init_batch = group[0:batchsize]
         stream = group[batchsize:]
     else:
