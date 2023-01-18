@@ -26,6 +26,8 @@ import GLOBALS
 
 async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 	# Note that this script does not ensure that the periodic storing of medoids is unique!
+	meta = []
+	lab = {}
 	buffer = {}
 	buffer_new = {}
 	data = []
@@ -49,16 +51,43 @@ async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 			netflow = line.split(',')
 			
 			# parse the line
-			ts = netflow[0]
-			bytes = int(netflow[1])
-			pkts = int(netflow[2])
-			srcip = netflow[5]
-			dstip = netflow[3]
-			srcport = int(netflow[8])
-			dstport = int(netflow[7])
-			label = netflow[9]
-
-			features = (pkts,bytes,srcport,dstport)
+			try:
+				ts = netflow[0]
+				#duration = float(netflow[1])
+				#proto = netflow[2]
+				srcip = netflow[3]
+				srcport = int(netflow[4], 0) if netflow[4] != '' else -1
+				#direction = netflow[5]
+				dstip = netflow[6]
+				dstport = int(netflow[7], 0) if netflow[7] != '' else -1
+				pkts = int(netflow[11])
+				bytes = int(netflow[12])
+				avg_bytes = round(bytes / float(pkts), 3)
+				label = (netflow[14])[5:-1]
+				if "background" in label.lower():
+					continue
+				label = "benign" if "normal" in label.lower() else "malicious"
+			except:
+				print('failed. trying another')
+				try:
+					ts = netflow[0]
+					bytes = int(netflow[1])
+					pkts = int(netflow[2])
+					srcip = netflow[5]
+					dstip = netflow[3]
+					srcport = int(netflow[8])
+					dstport = int(netflow[7])
+					label = netflow[9]
+				except:
+					ts = netflow[8]
+					bytes = int(netflow[4])
+					pkts = int(netflow[5])
+					srcip = netflow[0]
+					dstip = netflow[1]
+					srcport = int(netflow[2])
+					dstport = int(netflow[3])
+					label = netflow[7]
+			
 			print('.', end=' ', flush=True)
 
 			pair = (srcip)
@@ -69,7 +98,8 @@ async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 			# If not, then add entry to the buffer
 			
 			# Add the netflow to the buffer
-			buffer[pair].append(features)
+			buffer[pair].append(pkts)
+			lab[pair] = "M" if label != "benign" else 'B'
 			overallcount += 1
 
 			# Check if length == len. 
@@ -87,7 +117,7 @@ async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 						buffer[k] = buffer[k][_len:]
 						
 						data.append(buffer_new[k])
-						
+						meta.append(lab[k])
 						checkcount += len(buffer_new[k])
 						assert b == len(buffer_new[k])+len(buffer[k])
 						if len(buffer[k]) == 0:
@@ -108,15 +138,18 @@ async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 						plt.pause(1.0)
 						plt.close()
 					seqcount = init_count
+					plot_medoids('SECLEDS', 0, prototypes, nclasses, nprototypes, 0.0, DATASET, now_str)
 					continue
-				
+					
 				if run_clus:
-					seqcount += 1
+					
 					seq = buffer[pair][0:_len]
-					#print('Clustering', pair, len(seq), len(seq[0]))
+					#print('Clustering', pair, len(seq))
 						
 					print('C', end=' ', flush=True)
 					data.append(seq)
+					meta.append(str(seqcount) + "|"+ lab[pair])
+					assert len(data) == len(meta)
 					# Cluster assignment phase: assigning cluster to a point
 					(minimum_idx, assigned_clusters, pvotes) = exact_assign(prototypes, seq, assigned_clusters, proto_dist, pvotes, representative)
 					# Cluster update phase: replacing a prototype
@@ -135,12 +168,11 @@ async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 						buffer[pair] = buffer[pair][_len:]
 					else:
 						del buffer[pair]
-					
+					seqcount += 1
 					
 				timer_current = time.time()
 				if run_clus and (timer_current - timer_start) > save_every:
 					print('\n--- Saving medoids', savecounter)
-					print(proto_idx)
 					
 					with open(outfname,'a') as outfile:
 						for cid,cluster in enumerate(prototypes):
@@ -150,9 +182,14 @@ async def streamfunc(filename, nclasses, nprototypes, batchsize, _len=50):
 								writer.writerow(row)
 					savecounter += 1
 					print('--- End')
-					plot_medoids('SECLEDS', timer_current, prototypes, nclasses, nprototypes, 0.0, DATASET, now_str)
+					if meta != {}:
+						m = [[meta[p] for p in prot] for prot in proto_idx]
+					else:
+						m = None
+					plot_medoids('SECLEDS', timer_current, prototypes, nclasses, nprototypes, 0.0, DATASET, now_str, m)
 					timer_start = time.time()
 		x = sum([len(v) for (k,v) in buffer.items() if len(v) < _len])
+		print(overallcount, checkcount, x)
 		assert (overallcount == checkcount + x)
 		
 		print('\nFinal assigned clusters to stream', assigned_clusters)
