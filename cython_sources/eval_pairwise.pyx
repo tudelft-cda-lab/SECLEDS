@@ -9,7 +9,7 @@ from dtw import dtw
 import math
 import GLOBALS 
 
-def adjacency_accuracy(labels, predictions, pairs, bs=-1):
+def adjacency_accuracy(predictions, labels, pairs, bs=-1):
 
     cdef long long int TP, TN, FP, FN
     TP = 0
